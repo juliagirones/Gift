@@ -1,4 +1,3 @@
-// script.js
 let currentScene = 0;
 let inventory = [];
 let choices = {};
