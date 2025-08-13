@@ -1,44 +1,101 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Georgia', serif;
-  background-color: #000;
-  color: #eee;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  background-color: #111;
+  color: #fff;
+  font-family: 'Courier New', monospace;
 }
 
-#game {
-  max-width: 600px;
-  padding: 20px;
-  background: #111;
-  border-radius: 10px;
-  box-shadow: 0 0 10px #333;
+h1 {
+  color: #c00;
   text-align: center;
 }
 
-.scene-text {
-  font-size: 1.2em;
-  margin-bottom: 20px;
+button {
+  font-family: inherit;
 }
 
-button {
-  padding: 10px 15px;
-  margin: 8px;
-  font-size: 1em;
-  background-color: #333;
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #111;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.hidden {
+  display: none;
+}
+
+#game-container {
+  max-width: 800px;
+  margin: auto;
+  padding: 20px;
+  min-height: 80vh;
+}
+
+#scene-text {
+  font-size: 1.2rem;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  min-height: 200px;
+}
+
+#choices {
+  margin-top: 20px;
+}
+
+.choice-btn {
+  display: block;
+  margin: 10px 0;
+  padding: 10px;
+  border: 2px solid #c00;
+  background: transparent;
   color: #fff;
-  border: 1px solid #555;
-  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.3s ease;
+}
+
+.choice-btn:hover {
+  background: #c00;
+}
+
+#next-btn {
+  background: #c00;
+  color: white;
+  border: none;
+  padding: 10px 20px;
   cursor: pointer;
 }
 
-button:hover {
-  background-color: #555;
+.fade {
+  opacity: 0;
+  transition: opacity 0.8s ease-in-out;
 }
 
-#continue-btn {
-  margin-top: 20px;
+.fade.show {
+  opacity: 1;
+}
+
+#notification {
+  background: rgba(0,0,0,0.7);
+  border: 1px solid #c00;
+  color: #fff;
+  padding: 10px;
+  margin-top: 15px;
+  animation: fadeInOut 3s ease forwards;
+  text-align: center;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
 }
