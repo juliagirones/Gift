@@ -3,16 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Metu - Episodio 1</title>
+  <title>Black Hollow - Episodio 1</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="game">
-    <div id="scene" class="scene-text"></div>
-    <div id="choices"></div>
-    <button id="continue-btn" style="display: none;">Continuar</button>
-    <button id="continue-btn" style="display:none;">Continuar</button>
+  <div id="menu" class="overlay active">
+    <h1>BLACK HOLLOW</h1>
+    <button id="start-btn">Nuevo Juego</button>
+    <button id="continue-btn" class="hidden">Continuar</button>
+    <button id="clear-btn" class="hidden">Borrar Progreso</button>
   </div>
+
+  <div id="game-container" class="hidden">
+    <div id="scene-text" class="fade"></div>
+    <div id="choices"></div>
+    <button id="next-btn" class="hidden">Continuar</button>
+    <div id="notification" class="hidden"></div>
+  </div>
+
+  <audio id="bg-audio" loop></audio>
   <script src="script.js"></script>
 </body>
 </html>
