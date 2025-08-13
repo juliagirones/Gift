@@ -1,27 +1,32 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Black Hollow - Episodio 1</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black Hollow</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="menu" class="overlay active">
-    <h1>BLACK HOLLOW</h1>
-    <button id="start-btn">Nuevo Juego</button>
-    <button id="continue-btn" class="hidden">Continuar</button>
-    <button id="clear-btn" class="hidden">Borrar Progreso</button>
-  </div>
+    <!-- Pantalla de inicio -->
+    <div id="menu" class="fade-in">
+        <h1>BLACK<br>HOLLOW</h1>
+        <button onclick="nuevoJuego()">Nuevo Juego</button>
+        <button onclick="continuarJuego()">Continuar</button>
+        <button onclick="borrarProgreso()">Borrar Progreso</button>
+    </div>
 
-  <div id="game-container" class="hidden">
-    <div id="scene-text" class="fade"></div>
-    <div id="choices"></div>
-    <button id="next-btn" class="hidden">Continuar</button>
-    <div id="notification" class="hidden"></div>
-  </div>
+    <!-- Pantalla del juego -->
+    <div id="game" class="hidden">
+        <div id="background"></div>
+        <div id="text-box" class="fade-in">
+            <p id="story-text"></p>
+        </div>
+        <div id="choices"></div>
+    </div>
 
-  <audio id="bg-audio" loop></audio>
-  <script src="script.js"></script>
+    <!-- Audio -->
+    <audio id="bg-music" loop></audio>
+
+    <script src="script.js"></script>
 </body>
 </html>
