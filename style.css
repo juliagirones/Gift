@@ -1,101 +1,76 @@
 body {
-  margin: 0;
-  padding: 0;
-  background-color: #111;
-  color: #fff;
-  font-family: 'Courier New', monospace;
+    margin: 0;
+    padding: 0;
+    background-color: black;
+    font-family: 'Georgia', serif;
+    color: white;
+    overflow: hidden;
 }
 
 h1 {
-  color: #c00;
-  text-align: center;
+    font-size: 3rem;
+    margin-bottom: 1rem;
 }
 
 button {
-  font-family: inherit;
+    background-color: #333;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    margin: 0.4rem;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 4px;
 }
 
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #111;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+button:hover {
+    background-color: #555;
 }
 
 .hidden {
-  display: none;
+    display: none;
 }
 
-#game-container {
-  max-width: 800px;
-  margin: auto;
-  padding: 20px;
-  min-height: 80vh;
+#background {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 2s ease-in-out;
 }
 
-#scene-text {
-  font-size: 1.2rem;
-  line-height: 1.6;
-  margin-bottom: 20px;
-  min-height: 200px;
+.fade-in {
+    animation: fadeIn 2s forwards;
+}
+
+.fade-out {
+    animation: fadeOut 2s forwards;
+}
+
+@keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
+
+@keyframes fadeOut {
+    from {opacity: 1;}
+    to {opacity: 0;}
+}
+
+#text-box {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    background: rgba(0,0,0,0.6);
+    padding: 1rem;
+    font-size: 1.1rem;
+    line-height: 1.5rem;
 }
 
 #choices {
-  margin-top: 20px;
-}
-
-.choice-btn {
-  display: block;
-  margin: 10px 0;
-  padding: 10px;
-  border: 2px solid #c00;
-  background: transparent;
-  color: #fff;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background 0.3s ease;
-}
-
-.choice-btn:hover {
-  background: #c00;
-}
-
-#next-btn {
-  background: #c00;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  cursor: pointer;
-}
-
-.fade {
-  opacity: 0;
-  transition: opacity 0.8s ease-in-out;
-}
-
-.fade.show {
-  opacity: 1;
-}
-
-#notification {
-  background: rgba(0,0,0,0.7);
-  border: 1px solid #c00;
-  color: #fff;
-  padding: 10px;
-  margin-top: 15px;
-  animation: fadeInOut 3s ease forwards;
-  text-align: center;
-}
-
-@keyframes fadeInOut {
-  0% { opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { opacity: 0; }
+    margin-top: 1rem;
 }
