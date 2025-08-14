@@ -1,575 +1,470 @@
-// ------------------ DOM
-const menu = document.getElementById('menu');
-const startBtn = document.getElementById('startBtn');
-const continueBtn = document.getElementById('continueBtn');
-const clearBtn = document.getElementById('clearBtn');
+// ====== ELEMENTOS ======
+const startBtn = document.getElementById("start-btn");
+const restartBtn = document.getElementById("restart-btn");
+const startScreen = document.getElementById("start-screen");
+const gameScreen  = document.getElementById("game-screen");
+const endScreen   = document.getElementById("end-screen");
 
-const game = document.getElementById('game');
-const bg = document.getElementById('bg');
-const blackFade = document.getElementById('blackFade');
+const background  = document.getElementById("background");
+const storyBox    = document.getElementById("story-container");
+const sceneLabel  = document.getElementById("scene-label");
+const storyText   = document.getElementById("story-text");
+const choicesDiv  = document.getElementById("choices");
+const toast       = document.getElementById("toast");
+const jumpscareEl = document.getElementById("jumpscare");
 
-const storyText = document.getElementById('storyText');
-const choicesDiv = document.getElementById('choices');
-const continueBtnInGame = document.getElementById('continue');
-const note = document.getElementById('notification');
+const bgMusic     = document.getElementById("bg-music");
+const sfx         = document.getElementById("sfx");
 
-const bgAudio = document.getElementById('bgAudio');
-
-// ------------------ Estado
-let state = {
-  node: 'INTRO',          // ID del nodo actual
-  flags: {
-    eliasDistrust: false, // si Elias desconfía
-    angieAlly: false,     // si ganaste a Angie
-    skittlesPath: false,  // si dejaste Skittles
-  }
+// ====== ESTADO DEL JUGADOR ======
+const state = {
+  eliasDesconfia: false,
+  aliadaAngie: false,
+  rastroSkittles: false
 };
 
-const SAVE_KEY = 'bh_ep1_save_v1';
-
-// ------------------ Utilidades UI
-const TYPE_SPEED = 38;     // más lento para atmósfera
-const AUDIO_TARGET = 0.45; // volumen final
-const AUDIO_FADE_MS = 900;
-const BG_FADE_MS = 1200;
-
-// notificación tipo "recordará esto"
-function notify(msg){
-  note.textContent = msg;
-  note.classList.remove('hidden');
-  requestAnimationFrame(()=>{ note.style.opacity = 1; });
-  setTimeout(()=>{ note.style.opacity = 0; }, 2500);
-  setTimeout(()=>{ note.classList.add('hidden'); }, 3200);
+// ====== UTILIDADES AUDIO ======
+function fadeAudio(audio, target = 0.6, ms = 1800){
+  const steps = 30; const dt = ms/steps;
+  const dv = (target - audio.volume)/steps;
+  let n=0; const it = setInterval(()=>{
+    n++; audio.volume = Math.max(0, Math.min(1, audio.volume + dv));
+    if(n>=steps) clearInterval(it);
+  }, dt);
+}
+function playMusic(src, vol=0.6){
+  if(!src){ bgMusic.pause(); return; }
+  bgMusic.src = src; bgMusic.volume = 0;
+  bgMusic.play().catch(()=>{});
+  fadeAudio(bgMusic, vol, 2000);
+}
+function playSFX(src, vol=0.8){
+  if(!src) return;
+  sfx.src = src; sfx.volume = vol;
+  sfx.play().catch(()=>{});
 }
 
-// fundido negro cinematográfico
-function cutToBlack(onMid){
-  blackFade.style.opacity = 1;
-  setTimeout(()=>{
-    onMid && onMid();
-    blackFade.style.opacity = 0;
-  }, 650);
-}
-
-// audio fade
-function setBgAudio(src){
-  const go = ()=>{
-    bgAudio.src = src || '';
-    if(!src){ return; }
-    bgAudio.currentTime = 0;
-    bgAudio.volume = 0;
-    bgAudio.play().catch(()=>{});
-    const steps = 12, step = AUDIO_TARGET/steps;
-    let i=0;
-    const iv = setInterval(()=>{
-      i++;
-      bgAudio.volume = Math.min(AUDIO_TARGET, bgAudio.volume + step);
-      if(i>=steps) clearInterval(iv);
-    }, AUDIO_FADE_MS/steps);
-  };
-
-  if(!bgAudio.src){
-    go(); return;
-  }
-  // fade out previo, luego in
-  const steps = 10, step = bgAudio.volume/steps;
-  let i=0;
-  const iv = setInterval(()=>{
-    i++;
-    bgAudio.volume = Math.max(0, bgAudio.volume - step);
-    if(i>=steps){
-      clearInterval(iv);
-      bgAudio.pause();
-      go();
-    }
-  }, AUDIO_FADE_MS/steps);
-}
-
-// fondo con fade
+// ====== UI ======
 function setBackground(url){
-  bg.style.opacity = 0;
+  background.style.opacity = 0;
   setTimeout(()=>{
-    bg.style.backgroundImage = url ? `url("${url}")` : 'none';
-    bg.style.opacity = 1;
-  }, BG_FADE_MS/3);
+    background.style.backgroundImage = url ? `url('${url}')` : "none";
+    background.style.opacity = 1;
+  }, 220);
+}
+function showPanel(){ storyBox.classList.add("show"); }
+function hidePanel(){ storyBox.classList.remove("show"); }
+function showToast(msg, ms=2400){
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(()=>toast.classList.remove("show"), ms);
+}
+function doJumpscare(imgUrl, soundUrl){
+  jumpscareEl.style.backgroundImage = `url('${imgUrl}')`;
+  jumpscareEl.classList.remove("hidden");
+  requestAnimationFrame(()=>{
+    jumpscareEl.style.opacity = 1;
+    playSFX(soundUrl, 0.9);
+    setTimeout(()=>{
+      jumpscareEl.style.opacity = 0;
+      setTimeout(()=>jumpscareEl.classList.add("hidden"), 200);
+    }, 420);
+  });
 }
 
-// efecto máquina de escribir
-async function typeText(text){
-  storyText.classList.remove('typewriter');
-  storyText.textContent = '';
-  await new Promise(res=>setTimeout(res, 120)); // pequeña pausa
-  storyText.classList.add('typewriter');
-  for(let i=0;i<text.length;i++){
-    storyText.textContent += text[i];
-    await new Promise(res=>setTimeout(res, TYPE_SPEED));
-  }
-  storyText.classList.remove('typewriter');
+// ====== MAQUINA DE ESCRIBIR + GANCHOS ======
+function typeText(text, {speed=36, onDone}={}){
+  storyText.textContent = "";
+  let i=0;
+  const tick = () => {
+    if(i<text.length){
+      const ch = text.charAt(i);
+      storyText.textContent += ch;
+
+      // Triggers para "Metu..." y "¿Juri?"
+      if(text.slice(i, i+4) === "Metu"){
+        // susurro profundo
+        playSFX("https://cdn.pixabay.com/download/audio/2022/03/15/audio_6e13d0ff4b.mp3?filename=whisper-dark-12483.mp3", 0.5);
+      }
+      if(text.slice(i, i+4) === "Juri"){
+        // efecto marcador para tu futura voz
+        playSFX("https://cdn.pixabay.com/download/audio/2022/03/15/audio_3e4c9f9b8a.mp3?filename=alert-sound-12482.mp3", 0.7);
+      }
+
+      i++;
+      setTimeout(tick, speed);
+    } else {
+      onDone && onDone();
+    }
+  };
+  tick();
 }
 
-// helpers de botones
-function clearChoices(){
-  choicesDiv.innerHTML = '';
-  continueBtnInGame.classList.add('hidden');
-}
-function showContinue(onClick){
-  continueBtnInGame.onclick = onClick;
-  continueBtnInGame.classList.remove('hidden');
-}
+// ====== ESTRUCTURA DE ESCENAS (RESPETA TU GUION) ======
+/*
+Notas:
+- "scene" etiqueta visible (ESCENA 1, 2, ...).
+- Se subdividen pasos internos para respetar clicks del guion.
+- Algunas ramas modifican "state" y muestran toasts.
+- Al final se muestra "To be continued..." en la pantalla final.
+- Imágenes/sonidos: Pixabay (libres) temporales.
+*/
 
-// guardado
-function save(){
-  localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-}
-function load(){
-  const raw = localStorage.getItem(SAVE_KEY);
-  if(!raw) return false;
-  try{
-    const data = JSON.parse(raw);
-    if(data && data.node) { state = data; return true; }
-  }catch(_){}
-  return false;
-}
-function clearSave(){
-  localStorage.removeItem(SAVE_KEY);
-}
+const N = null; // helper
 
-// ------------------ Nodos del guion
-// Cada nodo: { id, bg, audio, text, next, choices:[{label,setFlag,note,next}] }
-const NODES = [
-  // ---------- INTRO (perfecta como acordamos)
-  {
-    id:'INTRO',
-    bg:'img/intro/oscuro.jpg',
-    audio:'audio/amb_wind_soft_leaves.mp3',
+const nodes = {
+  // INTRO (auto-avanza)
+  intro: {
+    scene:null,
+    bg:null,
+    music:"https://cdn.pixabay.com/download/audio/2022/03/15/audio_3a6461f1f6.mp3?filename=deep-dark-ambience-12481.mp3",
     text:
 `EPISODIO 1
 
-Eres Metu, una estudiante de antropología que quiere aprender de un nuevo descubrimiento en Black Hollow: ¡pinturas en las cavernas!
-
-En tu investigación has visto los periódicos de los últimos meses, para seguir el rastro del equipo que descubrió estas pinturas.
-Descubres que mucha gente que ha visitado Black Hollow ha desaparecido...
+Eres Metu, una estudiante de antropología que quiere aprender de un nuevo descubrimiento el Black Hollow; pinturas en las cavernas! En tu investigación has visto los periodicos de las últimos meses, para seguir el rastro del equipo que descubrió estas pinturas. Descubres que mucha gente que ha visitado Black Hollow ha desaparecido...
 
 Ya van 7 en los últimos dos meses.`,
-    autoNextAfter: 4000, // tras terminar de escribir + 4s
-    next:'S1_LINEA1'
+    next: "1a", auto:true, pause:2800
   },
 
-  // ---------- ESCENA 1 — LLEGADA
-  {
-    id:'S1_LINEA1',
-    bg:'img/escena1/pantalla_negra.jpg',
-    audio:'audio/amb_wind_soft_leaves.mp3',
+  // 🎬 ESCENA 1 — LLEGADA A BLACK HOLLOW
+  "1a": {
+    scene:"ESCENA 1 — LLEGADA A BLACK HOLLOW",
+    bg:null, // pantalla negra
+    music:"https://cdn.pixabay.com/download/audio/2021/09/14/audio_2c97acb2c3.mp3?filename=dark-wind-ambient-5981.mp3", // viento leve
     text:`"No creía en nada de esa basura paranormal... Hasta que llegué a Black Hollow."`,
-    next:'S1_VISUAL'
+    choices:[{label:"(Click para continuar)", next:"1b"}]
   },
-  {
-    id:'S1_VISUAL',
-    bg:'img/escena1/bienvenidos_black_hollow.jpg',
-    audio:'audio/amb_wind_soft_leaves.mp3',
-    text:
-`Metu de pie frente a una señal de madera: "Bienvenidos a Black Hollow".
+  "1b": {
+    scene:"ESCENA 1 — LLEGADA A BLACK HOLLOW",
+    bg:"https://cdn.pixabay.com/photo/2020/01/12/18/24/forest-4763466_1280.jpg", // camino y bosque
+    music:"https://cdn.pixabay.com/download/audio/2021/09/14/audio_2c97acb2c3.mp3?filename=dark-wind-ambient-5981.mp3",
+    text:`(Metu de pie frente a una señal de madera que dice “Bienvenidos a Black Hollow”.)
+
+(Narración - voz interna de Metu):
+“Descubrimiento de pinturas en cavernas y luego...tres desaparecidos en menos de dos meses. ¿Qué está pasando en este lugar?”`,
+    choices:[{label:"(Click para continuar)", next:"1c"}]
+  },
+  "1c": {
+    scene:"ESCENA 1 — LLEGADA A BLACK HOLLOW",
+    bg:"https://cdn.pixabay.com/photo/2018/08/14/13/23/people-3601885_1280.jpg", // silueta anciano
+    music:"https://cdn.pixabay.com/download/audio/2022/03/15/audio_9c235a4912.mp3?filename=dark-atmosphere-12481.mp3",
+    text:`(Silueta de un anciano encorvado, con bastón, en la puerta de su cabaña.)
+
+<strong class="speaker">Elias:</strong> “¿Buscas respuestas, chica de ciudad? ¿Vienes por los desaparecidos?"`,
+    choices:[
+      {label:"A. [¿Qué sabe usted de los desaparecidos?]", next:"1cA"},
+      {label:"B. [Solo vine a investigar las pinturas de las cavernas. No creo en cuentos.]", next:"1cB"},
+    ]
+  },
+  "1cA": {
+    scene:"ESCENA 1 — LLEGADA A BLACK HOLLOW",
+    bg:"https://cdn.pixabay.com/photo/2018/08/14/13/23/people-3601885_1280.jpg",
+    music:N,
+    text:`<em>A.</em> Lo que sé es que lo despertaron.`,
+    choices:[{label:"(Continuar)", next:"1d"}]
+  },
+  "1cB": {
+    scene:"ESCENA 1 — LLEGADA A BLACK HOLLOW",
+    bg:"https://cdn.pixabay.com/photo/2018/08/14/13/23/people-3601885_1280.jpg",
+    music:N,
+    text:`<em>B.</em> Tú eres una de ellos.`,
+    onEnter:()=>{ state.eliasDesconfia = true; showToast("El anciano recordará esto. Desde ahora, desconfía de ti."); },
+    choices:[{label:"(Continuar)", next:"1d"}]
+  },
+  "1d": {
+    scene:"ESCENA 1 — LLEGADA A BLACK HOLLOW",
+    bg:"https://cdn.pixabay.com/photo/2018/09/12/20/27/abandoned-3675474_1280.jpg", // exterior cabaña/fábrica lejana
+    music:"https://cdn.pixabay.com/download/audio/2022/03/15/audio_4b4e4d2e10.mp3?filename=dark-alley-12485.mp3",
+    text:`<strong class="speaker">Elias (bajo):</strong>
+“Estuvieron husmeando en la caverna, con tal de encontrar cualquier cosa que puedan vender...oro, plata...encontraron pinturas y... Algo antiguo. Algo hambriento. Escucha a las hojas. Ellas susurran la verdad.”`,
+    choices:[{label:"(Click para continuar)", next:"2"}]
+  },
+
+  // 🔎 ESCENA 2 — INTERIOR DE LA CASA / LIBRETA DE METU
+  "2": {
+    scene:"ESCENA 2 — INTERIOR DE LA CASA / LIBRETA DE METU",
+    bg:"https://cdn.pixabay.com/photo/2016/11/18/16/07/cabin-1836311_1280.jpg",
+    music:"https://cdn.pixabay.com/download/audio/2022/03/15/audio_4f3b808e45.mp3?filename=fireplace-crackling-12476.mp3",
+    text:`(Fondo interior de la cabaña. Metu hojea su libreta de notas.)
 
 (Narración)
-"Descubrimiento de pinturas en cavernas y luego... tres desaparecidos en menos de dos meses. ¿Qué está pasando en este lugar?"`,
-    next:'S1_ELIAS'
-  },
-  {
-    id:'S1_ELIAS',
-    bg:'img/escena1/cabana_elias.jpg',
-    audio:'audio/amb_wood_cabin_leaves.mp3',
-    text:
-`Una silueta encorvada aparece en la puerta de una cabaña. Un anciano con bastón.
-
-Elias: "¿Buscas respuestas, chica de ciudad? ¿Vienes por los desaparecidos?"`,
+“Elias sabe más de lo que dice. Habló de la fábrica. De los dibujos en las cavernas...Tengo que ir allí. De todas formas, no creo en estupideces..."`,
     choices:[
-      {
-        label:'A. ¿Qué sabe usted de los desaparecidos?',
-        next:'S1_ELIAS_A'
-      },
-      {
-        label:'B. Solo vine a investigar las pinturas de las cavernas. No creo en cuentos.',
-        setFlag:{ key:'eliasDistrust', value:true },
-        note:'El anciano recordará esto. Desde ahora, desconfía de ti.',
-        next:'S1_ELIAS_B'
-      }
+      {label:"(Click para abrir libreta)", next:"2hub"}
     ]
   },
-  {
-    id:'S1_ELIAS_A',
-    bg:'img/escena1/cabana_elias.jpg',
-    audio:'audio/amb_wood_cabin_leaves.mp3',
-    text:`Elias (bajo): "Lo que sé es que lo despertaron."`,
-    next:'S1_ELIAS_CONVERGE'
-  },
-  {
-    id:'S1_ELIAS_B',
-    bg:'img/escena1/cabana_elias.jpg',
-    audio:'audio/amb_wood_cabin_leaves.mp3',
-    text:`Elias: "Tú eres una de ellos."`,
-    next:'S1_ELIAS_CONVERGE'
-  },
-  {
-    id:'S1_ELIAS_CONVERGE',
-    bg:'img/escena1/cabana_elias_int.jpg',
-    audio:'audio/amb_cabin_low_whispers.mp3',
-    text:
-`Elias (bajo):
-"Estuvieron husmeando en la caverna, con tal de encontrar cualquier cosa que puedan vender... oro, plata...
-Encontraron pinturas y... Algo antiguo. Algo hambriento. Escucha a las hojas. Ellas susurran la verdad."`,
-    next:'S2_LIBRETA'
+  "2hub": {
+    scene:"ESCENA 2 — INTERIOR DE LA CASA / LIBRETA DE METU",
+    bg:"https://cdn.pixabay.com/photo/2016/11/18/16/07/cabin-1836311_1280.jpg",
+    music:N,
+    text:`(Esta parte será el HUB de pistas más adelante.)`,
+    onEnter:()=> showToast("HUB de pistas (próximamente)"),
+    choices:[{label:"(Salir de la cabaña)", next:"3"}]
   },
 
-  // ---------- ESCENA 2 — LIBRETA
-  {
-    id:'S2_LIBRETA',
-    bg:'img/escena2/interior_cabana_libreta.jpg',
-    audio:'audio/amb_room_paper_turn.mp3',
-    text:
-`Interior de la cabaña. Metu hojea su libreta de notas.
+  // 🎬 ESCENA 3 — LA FÁBRICA Y LA CAVERNA
+  "3": {
+    scene:"ESCENA 3 — LA FÁBRICA Y LA CAVERNA",
+    bg:"https://cdn.pixabay.com/photo/2018/09/12/20/27/abandoned-3675474_1280.jpg", // fábrica al fondo
+    music:"https://cdn.pixabay.com/download/audio/2021/09/14/audio_316f4e8d2a.mp3?filename=dark-forest-ambience-5982.mp3", // viento + zumbido leve
+    text:`(Silueta del pueblo desde la colina. Casas espaciadas. Una vieja fábrica al fondo, medio oculta entre árboles.)
 
-(Narración)
-"Elias sabe más de lo que dice. Habló de la fábrica. De los dibujos en las cavernas... Tengo que ir allí. De todas formas, no creo en estupideces..."`,
-    // En el futuro este nodo abrirá HUB de pistas
-    next:'S3_CAMINANTE'
-  },
+(La mujer con sombrero y canasta pasa sin detenerse. Ojos apenas visibles, brillos blancos.)
 
-  // ---------- ESCENA 3 — FABRICA Y CAVERNA / CAMINANTE
-  {
-    id:'S3_CAMINANTE',
-    bg:'img/escena3/pueblo_colina_fabrica.jpg',
-    audio:'audio/amb_wind_stronger_drone.mp3',
-    text:
-`Silueta del pueblo desde la colina. Casas espaciadas. Una vieja fábrica al fondo, medio oculta entre árboles.
+<strong class="speaker">Metu:</strong> “¿Disculpe… la caverna? Y la vieja fábrica… ¿sabe cómo llegar?”
 
-Una mujer con sombrero y canasta pasa sin detenerse. Sus ojos brillan en blanco apenas visibles.
-
-Metu: "¿Disculpe… la caverna? Y la vieja fábrica… ¿sabe cómo llegar?"`,
-    next:'S3_OPCIONES'
-  },
-  {
-    id:'S3_OPCIONES',
-    bg:'img/escena3/caminante_mujer.jpg',
-    audio:'audio/amb_wind_stronger_drone.mp3',
-    text:
-`Mujer (voz seca):
-"La fábrica está maldita. Y lo de la caverna… Mejor no vayas sola. Nadie regresa igual y nadie vive para contarlo. Esto ha pasado antes."`,
+<strong class="speaker">Mujer (voz seca, sin detenerse):</strong>
+“La fábrica está maldita. Y lo de la caverna… Mejor no vayas sola. Nadie regresa igual y nadie vive para contarlo. Esto ha pasado antes.”`,
     choices:[
-      {
-        label:'A. No creo en cuentos. Solo quiero investigar las pinturas.',
-        next:'S3_RPT_A'
-      },
-      {
-        label:'B. ¿Qué pasó con los que fueron?',
-        next:'S3_RPT_B'
-      }
+      {label:"A. [No creo en cuentos. Solo quiero investigar las pinturas.]", next:"3A"},
+      {label:"B. [¿Qué pasó con los que fueron?]", next:"3B"}
     ]
   },
-  {
-    id:'S3_RPT_A',
-    bg:'img/escena3/caminante_mujer.jpg',
-    audio:'audio/amb_wind_stronger_drone.mp3',
-    text:
-`Mujer:
-"Eso dijeron los últimos; que venían a investigar las cavernas. A buscar oro, plata...
-Pero tú escúchame bien… si oyes ruidos que imitan voces en el bosque: no respondas, no los escuchaste, no corras, no te escondas, no pares. Date la vuelta y regresa."`,
-    next:'S4_BOSQUE'
+  "3A": {
+    scene:"ESCENA 3 — LA FÁBRICA Y LA CAVERNA",
+    bg:"https://cdn.pixabay.com/photo/2018/09/12/20/27/abandoned-3675474_1280.jpg",
+    music:N,
+    text:`<strong class="speaker">Mujer:</strong> “Eso dijeron los últimos; que venían a investigar las cavernas. A buscar oro, plata... Pero tú escúchame bien… si oyes ruidos que imitan voces en el bosque: no respondas, no los escuchaste, no corras, no te escondas, no pares. Date la vuelta y regresa.”`,
+    choices:[{label:"(Click para continuar)", next:"4"}]
   },
-  {
-    id:'S3_RPT_B',
-    bg:'img/escena3/caminante_mujer.jpg',
-    audio:'audio/amb_wind_stronger_drone.mp3',
-    text:
-`Mujer:
-"Uno de estos mercenarios volvió. No hablaba, no comía. Murió tres días después...
-Algo lo arrancó de su cama y lo arrastró a la oscuridad de la noche."`,
-    next:'S4_BOSQUE'
+  "3B": {
+    scene:"ESCENA 3 — LA FÁBRICA Y LA CAVERNA",
+    bg:"https://cdn.pixabay.com/photo/2018/09/12/20/27/abandoned-3675474_1280.jpg",
+    music:N,
+    text:`<strong class="speaker">Mujer:</strong> “Uno de estos mercenarios volvió. No hablaba, no comía. Murió tres días después, algo lo arrancó de su cama y lo arrastró a la oscuridad de la noche.”`,
+    choices:[{label:"(Click para continuar)", next:"4"}]
   },
 
-  // ---------- ESCENA 4 — PRIMER BOSQUE + ANGIE
-  {
-    id:'S4_BOSQUE',
-    bg:'img/escena4/bosque_sombras.jpg',
-    audio:'audio/amb_forest_steps_breath_whistle.mp3',
-    text:
-`Árboles altos, ramas como garras. Sombras que se mueven. Un caminito de tierra.
+  // 🎬 ESCENA 4 — PRIMER BOSQUE + APARICIÓN DE ANGIE
+  "4": {
+    scene:"ESCENA 4 — PRIMER BOSQUE + APARICIÓN DE ANGIE",
+    bg:"https://cdn.pixabay.com/photo/2017/08/07/17/56/forest-2602383_1280.jpg",
+    music:"https://cdn.pixabay.com/download/audio/2021/09/14/audio_5c9c3a81f0.mp3?filename=creepy-forest-ambience-5980.mp3",
+    text:`(Árboles altos, ramas como garras. Sombras que se mueven. Caminito de tierra. Pasos sobre hojas, respiración de Metu, un silbido extraño a la distancia. Susurros de vez en cuando...)
 
-(Narración)
-"¿Qué es este lugar…? Todo se siente equivocado. Como si el aire observara."`,
-    next:'S4_SUSTO'
-  },
-  {
-    id:'S4_SUSTO',
-    bg:'img/escena4/bosque_ojos_blan\0cos.jpg',
-    audio:'audio/stinger_soft_whisper.mp3',
-    text:
-`Una figura aparece brevemente detrás de un árbol: ojos blancos. Desaparece en un parpadeo.
+(Visual: Silueta de Metu caminando, linterna encendida.)
 
-Metu: "¡¿Hola?!"`,
-    next:'S4_ANGIE_ENTRA'
-  },
-  {
-    id:'S4_ANGIE_ENTRA',
-    bg:'img/escena4/angie_corriendo.jpg',
-    audio:'audio/amb_forest_run_panicked.mp3',
-    text:
-`Una chica aparece corriendo desde el fondo, asustada. Se tropieza. Es Angie, pálida y sin zapatos.
+(Narración):
+“¿Qué es este lugar…? Todo se siente equivocado. Como si el aire observara.”
 
-Angie (temblando):
-"¡No lo mires! ¡No respondas! ¡No es tu voz la que escuchas…! ¡Corre!"`,
-    next:'S4_DECISION'
-  },
-  {
-    id:'S4_DECISION',
-    bg:'img/escena4/angie_close.jpg',
-    audio:'audio/amb_forest_low_heartbeat.mp3',
-    text:`¿Confías en Angie?`,
+(PRIMER SUSTO: Una figura aparece brevemente detrás de un árbol, ojos blancos. Desaparece en un parpadeo.)
+<strong class="speaker">Metu:</strong> “¡¿Hola?!”
+
+(Desde el fondo aparece una chica corriendo, asustada. Se tropieza. Es Angie, pálida y sin zapatos.)
+<strong class="speaker">Angie (temblando):</strong>
+“¡No lo mires! ¡No respondas! ¡No es tu voz la que escuchas…! ¡Corre!”`,
+    onEnter:()=>{
+      // pequeño "blink" como susto breve
+      setTimeout(()=>{
+        doJumpscare(
+          "https://cdn.pixabay.com/photo/2017/09/04/18/30/forest-2719851_1280.jpg",
+          "https://cdn.pixabay.com/download/audio/2022/03/10/audio_6fbc1b9e20.mp3?filename=hit-sound-11220.mp3"
+        );
+      }, 1800);
+    },
     choices:[
-      {
-        label:'[Ayudarla / Creerle]',
-        setFlag:{ key:'angieAlly', value:true },
-        note:'Has ganado un nuevo aliado: Angie.',
-        next:'S4_RAM1'
-      },
-      {
-        label:'[¿Estás tratando de asustar a la gente...? ¡Eras tú atrás del árbol!]',
-        note:'Angie recordará esto.',
-        next:'S4_RAM2'
-      }
+      {label:"RAMA 1: [Ayudarla / Creerle]", next:"4A"},
+      {label:"RAMA 2: [¿Estás tratando de asustar...? ¡Eras tú atrás del árbol!]", next:"4B"},
     ]
   },
-  {
-    id:'S4_RAM1',
-    bg:'img/escena4/angie_alivio.jpg',
-    audio:'audio/amb_forest_calm.mp3',
-    text:
-`Metu la sostiene de los hombros. Angie se calma.
+  "4A": {
+    scene:"ESCENA 4 — PRIMER BOSQUE + APARICIÓN DE ANGIE",
+    bg:"https://cdn.pixabay.com/photo/2017/08/07/17/56/forest-2602383_1280.jpg",
+    music:N,
+    text:`Metu la sostiene de los hombros y Angie se calma, dice que su hermano fue uno de los desaparecidos.
+Entrega una página rasgada de un diario con símbolos dibujados: parecen coincidir con los de las cavernas.
+Se convierte en posible aliada (más adelante puede salvarte de un susto grave).
 
-"Mi hermano fue uno de los desaparecidos..." —entrega una página rasgada de un diario con símbolos que coinciden con los de las cavernas.`,
-    next:'S5_SENDEROS'
+🌀 Nota en pantalla: “Has ganado un nuevo aliado: Angie.”`,
+    onEnter:()=>{ state.aliadaAngie = true; showToast("Has ganado un nuevo aliado: Angie."); },
+    choices:[{label:"(Click para continuar)", next:"5"}]
   },
-  {
-    id:'S4_RAM2',
-    bg:'img/escena4/angie_huye.jpg',
-    audio:'audio/amb_forest_run_away.mp3',
-    text:
-`Angie se ofende y corre de donde ha venido Metu.
+  "4B": {
+    scene:"ESCENA 4 — PRIMER BOSQUE + APARICIÓN DE ANGIE",
+    bg:"https://cdn.pixabay.com/photo/2017/08/07/17/56/forest-2602383_1280.jpg",
+    music:N,
+    text:`Angie se ofende, corre de donde ha venido Metu. Un grito ahogado se oye segundos después.
+Pierdes una posible pista. Más adelante será más difícil entrar a la caverna.
 
-Segundos después, un grito ahogado se escucha a lo lejos.
-
-(Pierdes una posible pista. Más adelante será más difícil entrar a la caverna.)`,
-    next:'S5_SENDEROS'
+🌀 Nota en pantalla: “Angie recordará esto.”`,
+    onEnter:()=>{ state.aliadaAngie = false; showToast("Angie recordará esto."); },
+    choices:[{label:"(Click para continuar)", next:"5"}]
   },
 
-  // ---------- ESCENA 5 — EL SENDERO PARTE
-  {
-    id:'S5_SENDEROS',
-    bg:'img/escena5/bosque_denso.jpg',
-    audio:'audio/amb_forest_quiet_odd_wind.mp3',
-    text:
-`La vegetación es más densa. El ambiente se vuelve silente, como si los sonidos naturales se hubieran suspendido.
+  // Escena 5 – “El Sendero Parte”
+  "5": {
+    scene:"ESCENA 5 — EL SENDERO PARTE",
+    bg:"https://cdn.pixabay.com/photo/2015/12/01/20/28/forest-1072828_1280.jpg",
+    music:"https://cdn.pixabay.com/download/audio/2022/03/15/audio_9c235a4912.mp3?filename=dark-atmosphere-12481.mp3",
+    text:`La cámara muestra a Metu adentrándose más en el bosque. La vegetación es más densa. El ambiente está cada vez más silente, como si los sonidos naturales se hubieran suspendido. El viento sopla con un murmullo extraño. Metu detiene su paso, inquieta. Mira hacia atrás. El camino ya no es tan claro.
 
-Viento con un murmullo extraño. Metu mira hacia atrás: el camino ya no es tan claro.
+<strong class="speaker">METU (pensando):</strong>
+"¿Y si no puedo volver...?"
 
-Metu (pensando):
-"¿Y si no puedo volver...?"`,
+[Decisión del jugador]`,
     choices:[
-      {
-        label:'🟡 "Tengo una bolsa de Skittles… A lo Hansel y Gretel, dejo mi path."',
-        setFlag:{ key:'skittlesPath', value:true },
-        note:'Logro: creatividad desbloqueada. Tal vez esto te salve después.',
-        next:'S6_CAVERNA'
-      },
-      {
-        label:'🔴 "Yo sabré regresar. No es un bosque tan tan grande."',
-        next:'S6_CAVERNA'
-      }
+      {label:"🟡 Opción 1: “Tengo una bolsa de Skittles… A lo Hansel y Gretel, dejo mi path.”", next:"5A"},
+      {label:"🔴 Opción 2: “Yo sabré regresar. No es un bosque tan tan grande.”", next:"5B"},
     ]
   },
-
-  // ---------- ESCENA 6 — LA VOZ EN LA CAVERNA
-  {
-    id:'S6_CAVERNA',
-    bg:'img/escena6/entrada_caverna_atardecer.jpg',
-    audio:'audio/amb_cave_moist_breath.mp3',
-    text:
-`Atardecer profundo. El cielo se tiñe de morado y rojo. La brisa del bosque se vuelve helada.
-
-La vegetación abre paso a una caverna oscura, cubierta de raíces como venas petrificadas.
-Del interior emana un sonido sutil, húmedo… como si algo respirara.
-
-Voz (susurrando):
-"Metu..."`,
-    next:'S6_VOZ2'
+  "5A": {
+    scene:"ESCENA 5 — EL SENDERO PARTE",
+    bg:"https://cdn.pixabay.com/photo/2015/12/01/20/28/forest-1072828_1280.jpg",
+    music:N,
+    text:`(Metu saca una bolsita de skittles de su mochila y empieza a dejar un colorido rastro detrás de ella. Suspira, aliviada. Está alerta, sus sentidos despiertos.)
+→ Desbloquea un pequeño logro por creatividad y prepara el camino para un posible escape más adelante.`,
+    onEnter:()=>{ state.rastroSkittles = true; showToast("Logro: Creatividad (rastro de Skittles)"); },
+    choices:[{label:"(Continuar hacia la caverna)", next:"6"}]
   },
-  {
-    id:'S6_VOZ2',
-    bg:'img/escena6/entrada_caverna_brillo.jpg',
-    audio:'audio/amb_cave_pulse.mp3',
-    text:
-`Metu se paraliza. Esa voz... no es posible.
-
-Metu (casi sin aire):
-"¿Juri?"
-
-La voz repite, más cerca:
-"Estoy aquí... por favor..."`,
-    next:'S6_JUMPSCARE'
+  "5B": {
+    scene:"ESCENA 5 — EL SENDERO PARTE",
+    bg:"https://cdn.pixabay.com/photo/2015/12/01/20/28/forest-1072828_1280.jpg",
+    music:N,
+    text:`(Metu se ríe para sí, un poco condescendiente. Guarda la bolsa de dulces y sigue caminando con paso firme, aunque no del todo seguro.)
+→ Más adelante, enfrentará consecuencias si no recuerda bien el camino.`,
+    onEnter:()=>{ state.rastroSkittles = false; },
+    choices:[{label:"(Continuar hacia la caverna)", next:"6"}]
   },
-  {
-    id:'S6_JUMPSCARE',
-    bg:'img/escena6/caverna_jumpscare_frame.jpg',
-    audio:'audio/stinger_jumpscare.mp3',
-    text:
-`Un leve resplandor anaranjado surge desde el fondo. Algo dentro palpita.
 
+  // Escena 6 – “La Voz en la Caverna” (Final del Episodio 1)
+  "6": {
+    scene:"ESCENA 6 — LA VOZ EN LA CAVERNA",
+    bg:"https://cdn.pixabay.com/photo/2020/05/04/18/46/cave-5131785_1280.jpg",
+    music:"https://cdn.pixabay.com/download/audio/2022/03/15/audio_a0450e6d9f.mp3?filename=deep-cave-ambience-12484.mp3",
+    text: (()=>{
+      // Ajuste sutil de estado emocional (no cambia el guion, solo añade una línea en cursiva)
+      let emocional = "";
+      if(state.rastroSkittles) emocional += "\n\n*Te aferras a la idea de que el rastro de Skittles te guiará de vuelta.*";
+      else emocional += "\n\n*Un nudo te aprieta el pecho; ¿dejaste el camino demasiado atrás?*";
+      if(!state.aliadaAngie) emocional += "\n*El grito de Angie aún vibra en tu cabeza.*";
+      return `Atardecer profundo. El cielo se tiñe de morado y rojo. La brisa del bosque se vuelve helada, como si algo estuviera conteniendo el aire.
+Metu, ahora sola en un sendero apenas visible, se detiene. La vegetación se abre paso a una caverna oscura, irregular y cubierta de raíces como venas petrificadas. De su interior emana un sonido sutil, húmedo… como si algo respirara.
+De repente, una voz muy conocida, lejana pero nítida:
+
+<strong class="speaker">VOZ (susurrando):</strong>
+“Metu...”
+Metu se paraliza. Esa voz... no es posible.
+<strong class="speaker">METU (casi sin aire):</strong>
+“¿Juri?”
+La voz repite, esta vez más cerca:
+<strong class="speaker">VOZ:</strong>
+“Estoy aquí... por favor...”
+Un leve resplandor anaranjado surge de las profundidades de la caverna. Algo dentro palpita.
 Metu avanza un paso, lentamente.
+Entonces…
 
-¡JUMPSCARE! Una figura alta y retorcida aparece en el borde de la pantalla:
-Cornamenta rota, ojos huecos, torso alargado, carne cuarteada por el frío.
-No se mueve. No respira. Solo observa. Un parpadeo… y desaparece.`,
-    next:'OUTRO'
-  },
+💥 ¡JUMPSCARE!
+Una figura alta y retorcida aparece justo en el borde de la pantalla, parcialmente iluminada por el resplandor.
+Tiene una cornamenta rota, ojos huecos y un torso alargado y antinatural. Su carne parece cuarteada por el frío.
+No se mueve. No respira. Solo observa. Un parpadeo… y desaparece.` + emocional + `
 
-  // ---------- OUTRO
-  {
-    id:'OUTRO',
-    bg:'img/outro/negro.jpg',
-    audio:'audio/amb_low_sub_boom.mp3',
-    text:`\n\n"To be continued..."`,
-    end:true
+CORTE EN NEGRO.
+
+TEXTO EN PANTALLA:
+"To be continued..."`;
+    })(),
+    onEnter:()=>{
+      // jumpscare al final del tipeo
+      pendingJumpscare = true;
+    },
+    choices:[{label:"(Finalizar Episodio 1)", next:"END"}]
   }
-];
+};
 
-// acceso rápido por id
-const NODE = Object.fromEntries(NODES.map(n=>[n.id,n]));
+// ====== MOTOR ======
+let currentKey = "intro";
+let pendingJumpscare = false;
 
-// ------------------ Motor
-async function showNode(id){
-  state.node = id;
-  save();
+function goTo(key){
+  currentKey = key;
 
-  const node = NODE[id];
-  // Cinematic cut: negro -> cambiar -> aparece
-  cutToBlack(()=>{
-    setBackground(node.bg);
-    setBgAudio(node.audio);
-    clearChoices();
-    storyText.textContent = '';
+  const node = nodes[key];
+
+  // Escena label
+  if(node.scene){ sceneLabel.textContent = node.scene; } else { sceneLabel.textContent = ""; }
+
+  // Fondo y música
+  setBackground(node.bg || null);
+  if(node.music !== undefined) playMusic(node.music, 0.6);
+
+  // Mostrar panel con fade
+  hidePanel();
+  setTimeout(()=>showPanel(), 140);
+
+  // Texto con máquina de escribir
+  const speed = 34; // más lento para atmósfera
+  pendingJumpscare = false;
+  typeText(node.text, {
+    speed,
+    onDone: ()=>{
+      // Disparar jumpscare justo cuando termina (solo en Escena 6)
+      if(pendingJumpscare){
+        setTimeout(()=>{
+          doJumpscare(
+            "https://cdn.pixabay.com/photo/2018/08/02/17/39/horror-3573167_1280.jpg",
+            "https://cdn.pixabay.com/download/audio/2022/03/10/audio_6fbc1b9e20.mp3?filename=hit-sound-11220.mp3"
+          );
+        }, 450);
+      }
+
+      // Mostrar opciones con pequeño delay para el mood
+      renderChoices(node.choices || []);
+      // Auto avance de intro si corresponde
+      if(node.auto){
+        setTimeout(()=> goTo(node.next), node.pause || 2200);
+      }
+    }
   });
 
-  // retraso de fade para que el negro se levante suavemente
-  await wait(760);
+  // Hooks onEnter
+  if(typeof node.onEnter === "function"){
+    // Ejecutar tras un pequeño delay para respetar el fade
+    setTimeout(()=>node.onEnter(), 420);
+  }
+}
 
-  await typeText(node.text);
-
-  if(node.choices && node.choices.length){
-    // mostrar opciones con fade lento
-    node.choices.forEach((c,i)=>{
-      const btn = document.createElement('button');
-      btn.className = 'choice fade-in-slow';
-      btn.textContent = c.label;
-      btn.style.animationDelay = `${150 + i*80}ms`;
-      btn.onclick = ()=>handleChoice(c);
+function renderChoices(choices){
+  choicesDiv.innerHTML = "";
+  if(!choices || !choices.length) return;
+  setTimeout(()=>{
+    choices.forEach(ch=>{
+      const btn = document.createElement("button");
+      btn.className = "choice";
+      btn.textContent = ch.label;
+      btn.onclick = ()=>{
+        if(ch.next === "END"){
+          // Pantalla final
+          gameScreen.classList.add("hidden");
+          endScreen.classList.remove("hidden");
+          bgMusic.pause();
+          return;
+        }
+        goTo(ch.next);
+      };
       choicesDiv.appendChild(btn);
     });
-  } else if (node.end){
-    // final: mostrar menú tras breve pausa
-    await wait(1400);
-    endToMenu();
-  } else {
-    // botón continuar (más lento para respirar la escena)
-    await wait(300);
-    showContinue(()=>{
-      if(node.autoNextAfter){
-        // si hubiera autoNext, no mostramos continuar (pero aquí por guion no aplica)
-      }
-      goNext(node);
-    });
-  }
-
-  // auto avance tras intro (respetando tu pedido)
-  if(node.autoNextAfter){
-    continueBtnInGame.classList.add('hidden');
-    setTimeout(()=>{ goNext(node); }, node.text.length*TYPE_SPEED + node.autoNextAfter);
-  }
+  }, 650); // aparece después para dar aire
 }
 
-function handleChoice(choice){
-  // bloquear más clicks
-  Array.from(choicesDiv.children).forEach(b=>b.classList.add('disabled'));
+// ====== INICIO / REINICIO ======
+startBtn.addEventListener("click", ()=>{
+  // Desbloquear audio al primer clic
+  playMusic(nodes.intro.music, 0.6);
 
-  if(choice.setFlag){
-    state.flags[choice.setFlag.key] = choice.setFlag.value;
-    save();
-  }
-  if(choice.note){
-    notify(choice.note);
-  }
-  // transición lenta antes de avanzar
-  setTimeout(()=>{ showNode(choice.next); }, 680);
-}
+  startScreen.classList.add("hidden");
+  endScreen.classList.add("hidden");
+  gameScreen.classList.remove("hidden");
 
-function goNext(node){
-  if(node.next){
-    showNode(node.next);
-  }else{
-    // seguridad
-    endToMenu();
-  }
-}
+  // Reset de estado
+  state.eliasDesconfia = false;
+  state.aliadaAngie   = false;
+  state.rastroSkittles= false;
 
-function wait(ms){ return new Promise(res=>setTimeout(res, ms)); }
-
-// ------------------ Menú / Inicio
-function startGame(newRun=true){
-  menu.classList.add('hidden');
-  game.classList.remove('hidden');
-
-  if(newRun){
-    state = { node:'INTRO', flags:{ eliasDistrust:false, angieAlly:false, skittlesPath:false } };
-    save();
-  }
-  showNode(state.node);
-}
-
-function endToMenu(){
-  // fundir a negro y volver al menú
-  cutToBlack(()=>{
-    game.classList.add('hidden');
-    menu.classList.remove('hidden');
-    continueBtn.classList.remove('hidden');
-    clearBtn.classList.remove('hidden');
-  });
-}
-
-// ------------------ Botones menú
-startBtn.addEventListener('click', ()=> startGame(true));
-
-continueBtn.addEventListener('click', ()=>{
-  if(load()){
-    startGame(false);
-  }else{
-    // si no hay save, comienza nuevo
-    startGame(true);
-  }
+  goTo("intro");
 });
 
-clearBtn.addEventListener('click', ()=>{
-  clearSave();
-  continueBtn.classList.add('hidden');
-  clearBtn.classList.add('hidden');
-  notify('Progreso borrado');
+restartBtn.addEventListener("click", ()=>{
+  startScreen.classList.remove("hidden");
+  endScreen.classList.add("hidden");
 });
-
-// Mostrar opciones de continuar si hay save
-if(load()){
-  continueBtn.classList.remove('hidden');
-  clearBtn.classList.remove('hidden');
-}
-
-// Al escribir, ofrecer "Continuar" si no hay choices/autoNext
-function showContinue(onClick){
-  continueBtnInGame.onclick = onClick;
-  continueBtnInGame.classList.remove('hidden');
-      }
