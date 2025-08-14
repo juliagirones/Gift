@@ -1,32 +1,41 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Black Hollow</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Black Hollow — Episodio 1</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <!-- Pantalla de inicio -->
-    <div id="menu" class="fade-in">
-        <h1>BLACK<br>HOLLOW</h1>
-        <button onclick="nuevoJuego()">Nuevo Juego</button>
-        <button onclick="continuarJuego()">Continuar</button>
-        <button onclick="borrarProgreso()">Borrar Progreso</button>
+  <!-- Menú de inicio/fin -->
+  <div id="menu">
+    <h1>BLACK HOLLOW</h1>
+    <p class="subtitle">Episodio 1: La Voz en la Caverna</p>
+    <div class="menu-actions">
+      <button id="startBtn">Nuevo juego</button>
+      <button id="continueBtn" class="hidden">Continuar</button>
+      <button id="clearBtn" class="hidden">Borrar progreso</button>
     </div>
+  </div>
 
-    <!-- Pantalla del juego -->
-    <div id="game" class="hidden">
-        <div id="background"></div>
-        <div id="text-box" class="fade-in">
-            <p id="story-text"></p>
-        </div>
-        <div id="choices"></div>
+  <!-- Capa fondo + overlay negro para fades -->
+  <div id="bg"></div>
+  <div id="vignette"></div>
+  <div id="blackFade"></div>
+
+  <!-- Juego -->
+  <div id="game" class="hidden">
+    <div id="story">
+      <p id="storyText"></p>
+      <div id="choices"></div>
+      <button id="continue" class="hidden">Continuar</button>
     </div>
+    <div id="notification" class="hidden"></div>
+  </div>
 
-    <!-- Audio -->
-    <audio id="bg-music" loop></audio>
+  <!-- Audio -->
+  <audio id="bgAudio" loop></audio>
 
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
