@@ -2,39 +2,46 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Black Hollow — Episodio 1</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <!-- Menú de inicio/fin -->
-  <div id="menu">
-    <h1>BLACK HOLLOW</h1>
-    <p class="subtitle">Episodio 1: La Voz en la Caverna</p>
-    <div class="menu-actions">
-      <button id="startBtn">Nuevo juego</button>
-      <button id="continueBtn" class="hidden">Continuar</button>
-      <button id="clearBtn" class="hidden">Borrar progreso</button>
-    </div>
-  </div>
+  <!-- PANTALLA INICIO -->
+  <section id="start-screen" class="screen center">
+    <h1 class="title">BLACK HOLLOW</h1>
+    <button id="start-btn" class="btn primary">Comenzar</button>
+  </section>
 
-  <!-- Capa fondo + overlay negro para fades -->
-  <div id="bg"></div>
-  <div id="vignette"></div>
-  <div id="blackFade"></div>
+  <!-- JUEGO -->
+  <section id="game-screen" class="screen hidden">
+    <div id="background"></div>
+    <div id="vignette"></div>
+    <div id="letterbox-top"></div>
+    <div id="letterbox-bottom"></div>
 
-  <!-- Juego -->
-  <div id="game" class="hidden">
-    <div id="story">
-      <p id="storyText"></p>
-      <div id="choices"></div>
-      <button id="continue" class="hidden">Continuar</button>
+    <div id="story-container" class="panel">
+      <div id="scene-label"></div>
+      <div id="story-text"></div>
+      <div id="choices" class="choices"></div>
     </div>
-    <div id="notification" class="hidden"></div>
-  </div>
+
+    <!-- Mensajes tipo "El anciano recordará esto", "Has ganado un aliado", etc. -->
+    <div id="toast"></div>
+
+    <!-- Jumpscare overlay -->
+    <div id="jumpscare" class="hidden"></div>
+  </section>
+
+  <!-- PANTALLA FINAL -->
+  <section id="end-screen" class="screen hidden center">
+    <h1 class="title">To be continued...</h1>
+    <button id="restart-btn" class="btn">Volver al inicio</button>
+  </section>
 
   <!-- Audio -->
-  <audio id="bgAudio" loop></audio>
+  <audio id="bg-music" loop></audio>
+  <audio id="sfx"></audio>
 
   <script src="script.js"></script>
 </body>
