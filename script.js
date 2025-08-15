@@ -267,7 +267,7 @@ Ya van 7 en los últimos dos meses.`,
 `Metu de pie frente a una señal de madera que dice "Bienvenidos a Black Hollow".
 
 (Narración - voz interna de Metu):
-"Descubrimiento de pinturas en cavernas y luego...tres desaparecidos en menos de dos meses. ¿Qué está pasando en este lugar?"`,
+"Descubrimiento de pinturas en cavernas y luego...siete desaparecidos en menos de dos meses. ¿Qué está pasando en este lugar?"`,
     next:'S1_ELIAS'
   },
   {
@@ -308,7 +308,7 @@ Elias: "¿Buscas respuestas, chica de ciudad? ¿Vienes por los desaparecidos?"`,
     text:
 `Elias (bajo):
 "Estuvieron husmeando en la caverna, con tal de encontrar cualquier cosa que puedan vender... oro, plata...
-Encontraron pinturas y... Algo antiguo. Algo hambriento. Escucha a las hojas. Ellas susurran la verdad."`,
+Encontraron pinturas y... Algo antiguo. Algo hambriento. Escucha a las hojas. Ellas susurran la verdad. Hagas lo aue hagas no vayas al bosque ni a la fábrica."`,
     next:'S2_LIBRETA'
   },
 
@@ -492,8 +492,7 @@ La voz repite, esta vez más cerca:
 `Un leve resplandor anaranjado surge de las profundidades de la caverna. Algo dentro palpita.
 Metu avanza un paso, lentamente.
 
-💥 ¡JUMPSCARE!
-Una figura alta y retorcida aparece justo en el borde de la pantalla, parcialmente iluminada por el resplandor.
+Una figura alta y retorcida aparece justo en el borde de la entrada, parcialmente iluminada por el resplandor.
 Tiene una cornamenta rota, ojos huecos y un torso alargado y antinatural. Su carne parece cuarteada por el frío.
 No se mueve. No respira. Solo observa. Un parpadeo… y desaparece.`,
     next:'OUTRO'
