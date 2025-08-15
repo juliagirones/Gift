@@ -1,31 +1,41 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Black Hollow - Episodio 1</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Black Hollow — Episodio 1</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div id="start-screen" class="screen active">
-        <h1>Black Hollow</h1>
-        <button id="start-btn">Nuevo Juego</button>
+  <!-- Menú de inicio/fin -->
+  <div id="menu">
+    <h1>BLACK HOLLOW</h1>
+    <p class="subtitle">Episodio 1: La Voz en la Caverna</p>
+    <div class="menu-actions">
+      <button id="startBtn">Nuevo juego</button>
+      <button id="continueBtn" class="hidden">Continuar</button>
+      <button id="clearBtn" class="hidden">Borrar progreso</button>
     </div>
+  </div>
 
-    <div id="game-screen" class="screen">
-        <div id="text-box"></div>
-        <div id="options"></div>
-        <button id="next-btn" class="hidden">Continuar</button>
+  <!-- Capa fondo + overlay negro para fades (bg se mantiene pero sin imágenes) -->
+  <div id="bg"></div>
+  <div id="vignette"></div>
+  <div id="blackFade"></div>
+
+  <!-- Juego -->
+  <div id="game" class="hidden">
+    <div id="story">
+      <p id="storyText"></p>
+      <div id="choices"></div>
+      <button id="continue" class="hidden">Continuar</button>
     </div>
+    <div id="notification" class="hidden"></div>
+  </div>
 
-    <div id="end-screen" class="screen">
-        <h2>To be continued...</h2>
-        <button id="restart-btn">Jugar de nuevo</button>
-    </div>
+  <!-- Audio HTML (opcional). El motor usa Web Audio; esto queda por si luego pones MP3 locales -->
+  <audio id="bgAudio" loop></audio>
 
-    <audio id="bg-music" loop></audio>
-    <audio id="sfx-voice"></audio>
-
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
