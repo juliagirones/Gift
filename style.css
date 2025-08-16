@@ -1,7 +1,7 @@
 :root{
-  --bg:#0d0d0f;          /* gris muy oscuro */
-  --text:#f5f5f5;        /* blanco suave */
-  --accent:#e53935;      /* rojo */
+  --bg:#0d0d0f;
+  --text:#f5f5f5;
+  --accent:#e53935;
   --muted:#bdbdbd;
 }
 
@@ -47,13 +47,13 @@ html,body{
 
 #bg{
   position:fixed; inset:0;
-  /* Sin imágenes: dejamos un degradado muy sutil para atmósfera */
+  /* Sin imágenes: degradado sutil */
   background: radial-gradient(120% 120% at 50% 80%, #0b0b0d 0%, #0d0d0f 45%, #060608 100%);
   opacity:1;
   z-index:-2;
 }
 
-/* viñeta para look cinematográfico */
+/* viñeta */
 #vignette{
   position:fixed; inset:0; pointer-events:none;
   background: radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,.55) 100%);
@@ -64,7 +64,7 @@ html,body{
 #blackFade{
   position:fixed; inset:0;
   background:#000; opacity:0; pointer-events:none;
-  transition: opacity 900ms ease-in-out; /* fade más lento */
+  transition: opacity 900ms ease-in-out;
   z-index:10;
 }
 
@@ -91,7 +91,7 @@ html,body{
   margin:0 0 10px 0;
 }
 
-/* Máquina de escribir (lento) */
+/* Máquina de escribir */
 .typewriter{
   border-right: 2px solid var(--accent);
   animation: caret 1.2s step-end infinite;
@@ -133,7 +133,7 @@ html,body{
   z-index:12;
 }
 
-/* Apariciones de botones y mensajes más lentas */
+/* Apariciones lentas */
 .fade-in-slow{ animation: fadeInSlow 900ms ease forwards }
 .fade-out-slow{ animation: fadeOutSlow 900ms ease forwards }
 @keyframes fadeInSlow{ from{opacity:0} to{opacity:1}}
