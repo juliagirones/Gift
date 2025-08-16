@@ -1,4 +1,4 @@
-:root{
+  :root{
   --bg:#0d0d0f;
   --text:#f5f5f5;
   --accent:#e53935;
@@ -47,20 +47,17 @@ html,body{
 
 #bg{
   position:fixed; inset:0;
-  /* Sin imágenes: degradado sutil */
   background: radial-gradient(120% 120% at 50% 80%, #0b0b0d 0%, #0d0d0f 45%, #060608 100%);
   opacity:1;
   z-index:-2;
 }
 
-/* viñeta */
 #vignette{
   position:fixed; inset:0; pointer-events:none;
   background: radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,.55) 100%);
   z-index:-1;
 }
 
-/* overlay negro para cortes/fades */
 #blackFade{
   position:fixed; inset:0;
   background:#000; opacity:0; pointer-events:none;
@@ -84,14 +81,13 @@ html,body{
 }
 
 #storyText{
-  min-height: 160px;
+  min-height: 200px;
   white-space: pre-wrap;
   line-height: 1.6;
   letter-spacing:.3px;
   margin:0 0 10px 0;
 }
 
-/* Máquina de escribir */
 .typewriter{
   border-right: 2px solid var(--accent);
   animation: caret 1.2s step-end infinite;
@@ -101,7 +97,8 @@ html,body{
 }
 
 #choices{
-  display:flex; flex-wrap:wrap; gap:10px; margin-top:8px;
+  display:flex; flex-direction:column; align-items:flex-start;
+  gap:10px; margin-top:8px;
 }
 .choice{
   background:transparent; color:var(--text);
@@ -114,7 +111,7 @@ html,body{
 .choice.disabled{ opacity:.5; pointer-events:none}
 
 #continue{
-  margin-top:10px; padding:10px 16px; align-self:flex-end;
+  margin-top:12px; padding:10px 16px; align-self:flex-end;
   background: var(--accent); color:white; border:0; border-radius:10px;
   cursor:pointer; transition: opacity .25s ease, transform .08s;
 }
@@ -133,7 +130,6 @@ html,body{
   z-index:12;
 }
 
-/* Apariciones lentas */
 .fade-in-slow{ animation: fadeInSlow 900ms ease forwards }
 .fade-out-slow{ animation: fadeOutSlow 900ms ease forwards }
 @keyframes fadeInSlow{ from{opacity:0} to{opacity:1}}
