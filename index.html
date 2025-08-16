@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Black Hollow — Episodios 1–2</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Black Hollow — Episodios 1 & 2</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Menú de inicio/fin -->
+  <!-- Menú -->
   <div id="menu">
     <h1>BLACK HOLLOW</h1>
-    <p class="subtitle">Episodios 1–2</p>
+    <p class="subtitle">La voz en la caverna</p>
     <div class="menu-actions">
       <button id="startBtn">Nuevo juego</button>
       <button id="continueBtn" class="hidden">Continuar</button>
@@ -18,22 +18,22 @@
     </div>
   </div>
 
-  <!-- Capa fondo + overlay negro para fades (sin imágenes) -->
+  <!-- Capas y overlays -->
   <div id="bg"></div>
   <div id="vignette"></div>
   <div id="blackFade"></div>
 
   <!-- Juego -->
-  <div id="game" class="hidden">
+  <div id="game" class="hidden" aria-live="polite">
     <div id="story">
-      <p id="storyText"></p>
-      <div id="choices"></div>
+      <p id="storyText" role="article"></p>
+      <div id="choices" role="list"></div>
       <button id="continue" class="hidden">Continuar</button>
     </div>
-    <div id="notification" class="hidden"></div>
+    <div id="notification" class="hidden" role="status"></div>
   </div>
 
-  <!-- Audio HTML opcional (no imprescindible) -->
+  <!-- elemento <audio> solo por si quieres mp3 locales más tarde; no necesario -->
   <audio id="bgAudio" loop></audio>
 
   <script src="script.js"></script>
